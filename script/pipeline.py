@@ -114,6 +114,14 @@ cd $RFAA_PATH
 
 
 """)
+#to change settings in run, can change with the .yaml under config/inference/ or change it on the run command itself. The syntax between running in .yaml and directly from the line can be a little different, so be aware and use .yaml when it's problematic.
+
+
+#diffuser - number of steps to take, typically 100-200 (also depends what you're looking for - more refined may need more) if you run too little it will look unusual and depends also on temperature and noise (not listed here, can add and can see in the hidden hydra file generated during running)
+
+#inference - number of design to output, ligand is specified (same name as in the pdb file). if you don't have a ligand then you want to run the not allatom RFdiffusion.
+#modify via contigmap: contigs = residues in pdb file to include - can refer to template, inpaint_str = used for reinforcing interactions - in template can hide away certain residues so the model will make inferences i.e. reinforce contact locations for more rigid proteins. The more you inpaint, the more you leave up to the model to sort out itself (kind of like leaving out of contigs), length = specify lower and upper bounds for number of amino acids in final model - depends also on linker regions
+
 
 
 RFDiffusion_run_command = textwrap.dedent("""
@@ -143,7 +151,7 @@ inference:
 model:
   freeze_track_motif: True
 
-contigmap:
+contigmap:  
   contigs: {contigs}
   inpaint_str: {inpaint_str}
   length: "{length}"
@@ -228,6 +236,15 @@ OUT_DIR={out_dir}/{basename}
 
 mkdir -p $OUT_DIR
 """)
+
+#model type - soluble_mpnn (trained on only water soluble proteins) can make more stable proteins than the model trained on everything (i.e. protein_mpnn). Problem is you can end up having transmembrane sequences be recognized as transmembrane sequences when you'd like them to be soluble. 
+#checkpoint where the weights are stored
+#pdb path & out self explanatory
+#pack_side_chains - 0 is false, 1 is true. relies on OpenMM for some help to arrange side chains. number_of_packs_per_design - number of packing samples to be fed back into design.  
+#pack_with_ligand_context - also 0 false, 1 true
+#batch_size - 
+#number_of_batches - 
+#of sequences is batch_size x number_of_batches
 
 soluble_ligandMPNN_run_command = textwrap.dedent("""
 python $LIGAND_MPNN_DIR/run.py \\
