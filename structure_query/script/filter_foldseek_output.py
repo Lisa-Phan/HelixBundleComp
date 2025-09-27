@@ -9,7 +9,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-foldseek_file = r"PDB_search_result.tsv"
+foldseek_file = r"../search_result/AFUni50min_search_result.tsv"
 
 result = pd.read_csv(foldseek_file, sep='\t')
 
@@ -23,9 +23,10 @@ result = result.astype({'fident': 'float64',
 #plt.savefig('prob_dist.png')
 
 
-fident_hist = sns.histplot(result, x='fident')
-plt.savefig('fident_dist.png')
+#fident_hist = sns.histplot(result, x='fident')
+#plt.savefig('fident_dist.png')
 
-#filter numbers
-filtered = result[(result['prob'] <= 0.8) & (result['fident'] >= 70)]
+#filter by sequence identity and probability of being homologous
+filtered = result[(result['fident'] <= 0.70) & (result['prob'] > 0.5)]
 
+filtered.to_csv('AFUniprot_filtered_result.csv', index=False)
