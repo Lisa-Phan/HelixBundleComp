@@ -127,7 +127,7 @@ RESNAME_TO_SINGLE_LETTER_DICT = amino_acid_dict = {
     'GLU': 'E',  # Glutamate
     'GLY': 'G',  # Glycine
     'HIS': 'H',  # Histidine
-    'ILE': 'I',  # Isoleucine
+    'ILE': 'I',  # Isoleucine   
     'LEU': 'L',  # Leucine
     'LYS': 'K',  # Lysine
     'MET': 'M',  # Methionine
@@ -187,7 +187,7 @@ def trim_structure_from_indices(structure: AtomArray,
     assert start_residue < end_residue, f'Start {start_residue} is not less than end {end_residue}'
     return structure[(structure.res_id >= start_residue) & (structure.res_id <= end_residue)]
 
-def find_residue_within_distance(query_atom, hit_pdb):
+def find_residue_within_distance(query_atom: Atom, hit_pdb: AtomArray):
     """
     Find corresponding start and end position of the template 
     in hit pdb
@@ -226,9 +226,12 @@ def trim_ca_based_on_template(input: str, start_ca: Atom, end_ca: Atom) -> AtomA
     end_index = match_end.res_id
         
     print('start and end indices: ', start_index, end_index, )
-    trimmed = trim_structure_from_indices(query_pdb, start_index, end_index)
-
-    return trimmed
+    try:
+        trimmed = trim_structure_from_indices(query_pdb, start_index, end_index)
+        return trimmed
+    except: 
+        print(f'run into issue with input {input} and start atom {start_ca} end atom {end_ca}')
+        exit()
 
 def superimpose_structure(ref_pdb: AtomArray, alphafold_pdb: AtomArray) -> tuple[AtomArray, float]: 
     """
@@ -295,6 +298,47 @@ def main():
 
         #write to outfile
         os.system(f'echo {template_basename},{hit_basename},{seq},{rmsd} >> {outfile}')
-         
+
+def main_two():
+    """
+    Modified main to read in structure and query as pairs from a file
+    File has two columns, first column is path to template, second column is path to hit
+    """
+    parser = argparse.ArgumentParser("Trimming CA backbone from foldseek output based on template matching")
+    parser.add_argument('-f', '--file', type=str, help='Input file with two columns, <template_path> <hit_path>')
+    parser.add_argument('-o', '--outdir', type=str, help='Output directory', default='./')
+    
+    args = parser.parse_args()
+
+    #outfilepath
+    outfile = os.path.join(args.outdir, 'trim_result.csv')
+    os.system(f'echo template,query,trimmed_seq,recalculated_rmsd >> {outfile}')
+
+    with open(args.file, 'r') as inFile:
+        for line in inFile:
+            template_path, hit_path = line.strip().split(',')
+            
+            #do template reading
+            template_pdb = get_pdb_structure(template_path)
+            template_basename = os.path.basename(template_path)
+            start_ca = get_ca(template_pdb, 'start')
+            end_ca = get_ca(template_pdb, 'end')
+
+            #do hit reading
+            trimmed = trim_ca_based_on_template(hit_path, start_ca, end_ca)
+        
+            #get sequence
+            seq = read_structure_return_sequence(trimmed)
+        
+            #do superimposition (likely won't change anything) with trimmed sequence
+            aligned_hit, rmsd = superimpose_structure(template_pdb[template_pdb.atom_name == 'CA'], 
+                                                  trimmed)
+            hit_basename = os.path.basename(hit_path).strip('.pdb')
+            outpath = os.path.join(args.outdir, f'{hit_basename}_truncated.pdb' )
+            
+            #write to outfile
+            write_structure(trimmed, outpath)
+            os.system(f'echo {template_basename},{hit_basename},{seq},{rmsd} >> {outfile}')
+
 if __name__ == '__main__':
-    main()
+    main_two()
