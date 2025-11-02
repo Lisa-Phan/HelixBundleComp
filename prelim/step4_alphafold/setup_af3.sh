@@ -32,8 +32,8 @@ fill_slurm_template () {
 
 module load alphafold/3.0.0
 
-export AF_MODELS_DIR=/N/slate/$USER/alphafold_models
-export AF_INPUTDIR=$AF_INDIR
+export AF_MODELS_DIR=/geode2/home/u020/cvanstap/alphafold3_weights
+export AF_INDIR=$AF_INDIR
 export AF_OUTDIR=$AF_OUTDIR
 
 #cp alphafold_input.json $AF_INPDIR
@@ -41,10 +41,10 @@ cp /N/soft/rhel8/alphafold/3.0.0/example/run_alphafold.py $AF_INDIR
 
 apptainer exec \\
     --nv \\
-    --bind $AF_INPUTDIR:/root/af_input \\
+    --bind $AF_INDIR:/root/af_input \\
     --bind $AF_OUTDIR:/root/af_output \\
-    --bind $AF_MODELS_DIR:/root/models \\
-    $AF_CONTAINER \\
+    --bind /geode2/home/u020/cvanstap/alphafold3_weights:/root/models \\
+    /N/soft/containers/alphafold3.sif \\
     python /root/af_input/run_alphafold.py \\
     --json_path=/root/af_input/alphafold_input.json \\
     --model_dir=/root/models \\
